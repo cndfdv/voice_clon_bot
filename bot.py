@@ -17,7 +17,9 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
+from F5TTS.f5_tts.api import F5TTS
 from pydub import AudioSegment
+from ruaccent import RUAccent
 
 logging.basicConfig(level=logging.INFO)
 
@@ -75,6 +77,53 @@ def get_audio_duration(file_path: str) -> float:
     """Возвращает длительность аудио в секундах"""
     audio = AudioSegment.from_file(file_path)
     return len(audio) / 1000
+
+
+def convert_to_wav(audio_path: str) -> str:
+    """convert audio to wav
+
+    Args:
+        audio_path (str): path to audio w ogg or mp3 format
+
+    Returns:
+        str: path to wav
+    """
+    audio = AudioSegment.from_file(audio_path)
+
+    wav_path = audio_path[: audio_path.rindex(".")] + ".wav"
+    audio.export(wav_path, format="wav")
+    return wav_path
+
+
+f5tts = F5TTS(
+    ckpt_file="F5TTS/ckpts/model_last_inference.safetensors",
+    vocab_file="F5TTS/ckpts/vocab.txt",
+    device="cuda",
+)
+accentizer = RUAccent()
+accentizer.load(omograph_model_size="turbo3.1", use_dictionary=True, tiny_mode=False)
+
+
+def generate_audio(wav_path: str, text: str) -> str:
+    """Generate audio
+
+    Args:
+        wav_path (str): path to audio
+        text (str): text to clone
+
+    Returns:
+        str: path to generated audio
+    """
+    generated_audio_path = "generate/gen" + wav_path
+    wav, sr, spec = f5tts.infer(
+        ref_file=wav_path,
+        ref_text="",
+        gen_text=accentizer.process_all(text),
+        file_wave=generated_audio_path,
+        seed=None,
+        remove_silence=True,
+    )
+    return generated_audio_path
 
 
 # ---------- Старт / Help ----------
@@ -151,14 +200,29 @@ async def receive_text(message: types.Message, state: FSMContext):
         await state.set_state(CloneStates.waiting_voice)
         return
 
-        # --- Здесь вставляете свой TTS код ---
-        # Например: tts_generate(voice_path, text)
-        # Для примера просто отправим исходный файл
-    await message.answer_document(
-        FSInputFile(voice_path), caption=f"🔊 Сгенерировано аудио для текста:\n{text}"
-    )
+    # --- Конвертация в wav, если нужно ---
+    if not voice_path.endswith(".wav"):
+        wav_path = convert_to_wav(voice_path)
+    else:
+        wav_path = voice_path
+
+    # --- Генерация ---
+    try:
+        generated_path = generate_audio(wav_path, text)
+
+        await message.answer_document(
+            FSInputFile(generated_path),
+            caption=f"🔊 Сгенерировано аудио для текста:\n{text}",
+        )
+    except Exception as e:
+        logging.exception("Ошибка генерации")
+        await message.answer(f"⚠️ Ошибка генерации: {e}")
+        return
+
+    # --- Клавиатура после генерации ---
     await message.answer(
-        "Выберите вариант для следующего синтеза:", reply_markup=kb_after_generation()
+        "Выберите вариант для следующего синтеза:",
+        reply_markup=kb_after_generation(),
     )
 
 
