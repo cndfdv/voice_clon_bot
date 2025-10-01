@@ -214,6 +214,7 @@ async def receive_text(message: types.Message, state: FSMContext):
             FSInputFile(generated_path),
             caption=f"🔊 Сгенерировано аудио для текста:\n{text}",
         )
+        os.remove(generated_path)
     except Exception as e:
         logging.exception("Ошибка генерации")
         await message.answer(f"⚠️ Ошибка генерации: {e}")
