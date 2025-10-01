@@ -17,13 +17,16 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
-from F5TTS.f5_tts.api import F5TTS
 from pydub import AudioSegment
 from ruaccent import RUAccent
 
+from F5TTS.f5_tts.api import F5TTS
+
 logging.basicConfig(level=logging.INFO)
 
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "TG_TOKEN")
+BOT_TOKEN = os.getenv(
+    "TELEGRAM_BOT_TOKEN", "8248132968:AAFl22P5TJhBH_4XdEzMJ2EXXQmaxzN2epA"
+)
 TMP_DIR = Path("tmp")
 TMP_DIR.mkdir(exist_ok=True)
 
@@ -114,7 +117,12 @@ def generate_audio(wav_path: str, text: str) -> str:
     Returns:
         str: path to generated audio
     """
-    generated_audio_path = "generate/gen" + wav_path
+    wav_path = Path(wav_path)
+    out_dir = Path("generate")
+    out_dir.mkdir(exist_ok=True)
+
+    generated_audio_path = out_dir / f"gen_{wav_path.stem}.wav"
+
     wav, sr, spec = f5tts.infer(
         ref_file=wav_path,
         ref_text="",
@@ -190,6 +198,9 @@ async def receive_audio(message: types.Message, state: FSMContext):
 @dp.message(StateFilter(CloneStates.waiting_text))
 async def receive_text(message: types.Message, state: FSMContext):
     text = message.text
+    await message.answer(
+        "✅ Текст получен. Начинаю генерацию аудио. Это займет некоторое время"
+    )
     data = await state.get_data()
     voice_path = data.get("voice_path")
 
