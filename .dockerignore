@@ -1,0 +1,13 @@
+.git
+.gitignore
+.vscode
+tmp/
+generate/
+*.ogg
+*.mp3
+*.wav
+__pycache__
+*.pyc
+.env
+README.md
+token.txt

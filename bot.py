@@ -25,7 +25,7 @@ from F5TTS.f5_tts.api import F5TTS
 # ---------- Логирование ----------
 logging.basicConfig(level=logging.INFO)
 
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8248132968:AAFl22P5TJhBH_4XdEzMJ2EXXQmaxzN2epA")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TMP_DIR = Path("tmp")
 TMP_DIR.mkdir(exist_ok=True)
 GENERATE_DIR = Path("generate")
@@ -82,9 +82,9 @@ def convert_to_wav(audio_path: str) -> str:
 
 # ---------- F5TTS и Accent ----------
 f5tts = F5TTS(
-    ckpt_file="F5TTS/ckpts/model_last_inference.safetensors",
+    ckpt_file="F5TTS/ckpts/model_212000.safetensors",
     vocab_file="F5TTS/ckpts/vocab.txt",
-    device="cuda",
+    device="cpu",
 )
 accentizer = RUAccent()
 accentizer.load(omograph_model_size="turbo3.1", use_dictionary=True, tiny_mode=False)

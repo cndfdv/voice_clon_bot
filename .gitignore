@@ -3,3 +3,8 @@ token.txt
 *.mp3
 F5TTS/
 *.wav
+.vscode
+.env
+tmp/
+generate/
+__pycache__/
